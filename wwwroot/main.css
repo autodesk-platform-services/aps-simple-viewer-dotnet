@@ -1,0 +1,40 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+}
+
+#header, #preview {
+    position: absolute;
+    width: 100%;
+}
+
+#header {
+    height: 3em;
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#preview {
+    top: 3em;
+    bottom: 0;
+}
+
+#header > * {
+    height: 2em;
+    margin: 0 0.5em;
+    font-family: ArtifaktElement; /* Will be added by Forge Viewer */
+    font-size: 1em;
+}
+
+#header .title {
+    flex: 1 0 auto;
+    height: auto;
+}
+
+#models {
+    flex: 0 1 auto;
+    min-width: 2em;
+}
