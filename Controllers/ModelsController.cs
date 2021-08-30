@@ -29,14 +29,15 @@ namespace forge_simple_viewer_dotnet
 
         public class UploadModelForm
         {
-             [FromForm(Name = "model-zip-entrypoint")]
+            [FromForm(Name = "model-zip-entrypoint")]
             public string Entrypoint { get; set; }
+
             [FromForm(Name = "model-file")]
             public IFormFile File { get; set; }
         }
 
         [HttpPost()]
-        public async Task<dynamic> UploadAndTranslateModel([FromForm]UploadModelForm form)
+        public async Task UploadAndTranslateModel([FromForm] UploadModelForm form)
         {
             // For some reason we cannot use the incoming stream directly...
             // so let's save the model into a local temp file first
@@ -48,9 +49,9 @@ namespace forge_simple_viewer_dotnet
             using (var stream = System.IO.File.OpenRead(tmpPath))
             {
                 dynamic obj = await _forgeService.UploadModel(form.File.FileName, stream, form.File.Length);
-                dynamic job = await _forgeService.TranslateModel(obj.objectId, form.Entrypoint);
-                return job;
+                await _forgeService.TranslateModel(obj.objectId, form.Entrypoint);
             }
+            System.IO.File.Delete(tmpPath);
         }
     }
 }
