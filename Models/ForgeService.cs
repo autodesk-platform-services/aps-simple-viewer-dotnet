@@ -1,10 +1,10 @@
-using Autodesk.Forge;
-using Autodesk.Forge.Client;
-using Autodesk.Forge.Model;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Autodesk.Forge;
+using Autodesk.Forge.Client;
+using Autodesk.Forge.Model;
 
 namespace forge_simple_viewer_dotnet
 {
@@ -39,15 +39,25 @@ namespace forge_simple_viewer_dotnet
 
         public async Task<IEnumerable<dynamic>> GetObjects()
         {
+            const int PageSize = 64;
             await EnsureBucketExists(_bucket);
             var token = await GetInternalToken();
             var api = new ObjectsApi();
             api.Configuration.AccessToken = token.AccessToken;
             var objects = new List<dynamic>();
-            dynamic response = await api.GetObjectsAsync(_bucket, 100); // TODO: add pagination
+            dynamic response = await api.GetObjectsAsync(_bucket, PageSize);
             foreach (KeyValuePair<string, dynamic> obj in new DynamicDictionaryItems(response.items))
             {
                 objects.Add(new { name = obj.Value.objectKey, urn = Base64Encode(obj.Value.objectId) });
+            }
+            while ((response as DynamicDictionary).Dictionary.ContainsKey("next")) // This feels hacky... is there a better way?
+            {
+                var queryParams = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(new Uri(response.next).Query);
+                response = await api.GetObjectsAsync(_bucket, PageSize, null, queryParams["startAt"]);
+                foreach (KeyValuePair<string, dynamic> obj in new DynamicDictionaryItems(response.items))
+                {
+                    objects.Add(new { name = obj.Value.objectKey, urn = Base64Encode(obj.Value.objectId) });
+                }
             }
             return objects;
         }
@@ -67,9 +77,8 @@ namespace forge_simple_viewer_dotnet
             var token = await GetInternalToken();
             var api = new DerivativesApi();
             api.Configuration.AccessToken = token.AccessToken;
-            var formats = new List<JobPayloadItem>
-            {
-                new JobPayloadItem(JobPayloadItem.TypeEnum.Svf, new List<JobPayloadItem.ViewsEnum> { JobPayloadItem.ViewsEnum._2d, JobPayloadItem.ViewsEnum._2d })
+            var formats = new List<JobPayloadItem> {
+                new JobPayloadItem (JobPayloadItem.TypeEnum.Svf, new List<JobPayloadItem.ViewsEnum> { JobPayloadItem.ViewsEnum._2d, JobPayloadItem.ViewsEnum._2d })
             };
             var payload = new JobPayload(
                 new JobPayloadInput(Base64Encode(objectId)),
@@ -102,11 +111,7 @@ namespace forge_simple_viewer_dotnet
             {
                 if (e.ErrorCode == 404)
                 {
-                    await api.CreateBucketAsync(new PostBucketsPayload
-                    {
-                        BucketKey = bucketKey,
-                        PolicyKey = PostBucketsPayload.PolicyKeyEnum.Temporary
-                    });
+                    await api.CreateBucketAsync(new PostBucketsPayload(bucketKey, null, PostBucketsPayload.PolicyKeyEnum.Temporary));
                 }
                 else
                 {
