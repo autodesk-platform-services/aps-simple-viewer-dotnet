@@ -7,17 +7,6 @@ using System.Threading.Tasks;
 
 namespace forge_simple_viewer_dotnet
 {
-    public class Bucket
-    {
-        public string Name { get; set; }
-    }
-
-    public class Object
-    {
-        public string Name { get; set; }
-        public string URN { get; set; }
-    }
-
     public class Token
     {
         public string AccessToken { get; set; }
@@ -26,15 +15,12 @@ namespace forge_simple_viewer_dotnet
 
     public interface IForgeService
     {
-        Task<IEnumerable<Object>> GetObjects();
+        Task<IEnumerable<dynamic>> GetObjects();
         Task<Token> GetAccessToken();
     }
 
     public class ForgeService : IForgeService
     {
-        private readonly TwoLeggedApi _twoLeggedApi = new TwoLeggedApi();
-        private readonly BucketsApi _bucketsApi = new BucketsApi();
-        private readonly ObjectsApi _objectsApi = new ObjectsApi();
         private readonly string _clientId;
         private readonly string _clientSecret;
         private readonly string _bucket;
@@ -48,20 +34,17 @@ namespace forge_simple_viewer_dotnet
             _bucket = string.IsNullOrEmpty(bucket) ? string.Format("{0}-basic-app", _clientId.ToLower()) : bucket;
         }
 
-        public async Task<IEnumerable<Object>> GetObjects()
+        public async Task<IEnumerable<dynamic>> GetObjects()
         {
             await EnsureBucketExists(_bucket);
-            var objects = new List<Object>();
             var token = await GetInternalToken();
-            _objectsApi.Configuration.AccessToken = token.AccessToken;
-            dynamic response = await _objectsApi.GetObjectsAsync(_bucket, 100);
+            var api = new ObjectsApi();
+            api.Configuration.AccessToken = token.AccessToken;
+            var objects = new List<dynamic>();
+            dynamic response = await api.GetObjectsAsync(_bucket, 100); // TODO: add pagination
             foreach (KeyValuePair<string, dynamic> obj in new DynamicDictionaryItems(response.items))
             {
-                objects.Add(new Object
-                {
-                    Name = obj.Value.objectKey,
-                    URN = Base64Encode(obj.Value.objectId)
-                });
+                objects.Add(new { name = obj.Value.objectKey, urn = Base64Encode(obj.Value.objectId) });
             }
             return objects;
         }
@@ -74,16 +57,17 @@ namespace forge_simple_viewer_dotnet
         private async Task EnsureBucketExists(string bucketKey)
         {
             var token = await GetInternalToken();
-            _bucketsApi.Configuration.AccessToken = token.AccessToken;
+            var api = new BucketsApi();
+            api.Configuration.AccessToken = token.AccessToken;
             try
             {
-                dynamic details = await _bucketsApi.GetBucketDetailsAsync(bucketKey);
+                await api.GetBucketDetailsAsync(bucketKey);
             }
             catch (ApiException e)
             {
                 if (e.ErrorCode == 404)
                 {
-                    await _bucketsApi.CreateBucketAsync(new PostBucketsPayload
+                    await api.CreateBucketAsync(new PostBucketsPayload
                     {
                         BucketKey = bucketKey,
                         PolicyKey = PostBucketsPayload.PolicyKeyEnum.Temporary
@@ -116,12 +100,7 @@ namespace forge_simple_viewer_dotnet
 
         private async Task<Token> GetToken(Scope[] scopes)
         {
-            dynamic auth = await _twoLeggedApi.AuthenticateAsync(
-                _clientId,
-                _clientSecret,
-                "client_credentials",
-                scopes
-            );
+            dynamic auth = await new TwoLeggedApi().AuthenticateAsync(_clientId, _clientSecret, "client_credentials", scopes);
             return new Token
             {
                 AccessToken = auth.access_token,

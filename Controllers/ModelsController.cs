@@ -1,7 +1,7 @@
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace forge_simple_viewer_dotnet
 {
@@ -19,10 +19,10 @@ namespace forge_simple_viewer_dotnet
         }
 
         [HttpGet()]
-        public async Task<IEnumerable<forge_simple_viewer_dotnet.Object>> GetModels()
+        public async Task<ActionResult<string>> GetModels()
         {
             var objects = await _forgeService.GetObjects();
-            return objects;
+            return JsonConvert.SerializeObject(objects);
         }
     }
 }
