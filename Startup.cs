@@ -38,6 +38,7 @@ namespace forge_simple_viewer_dotnet
                 app.UseDeveloperExceptionPage();
             }
             app.UseHttpsRedirection();
+            app.UseDefaultFiles();
             app.UseStaticFiles();
             app.UseRouting();
             app.UseAuthorization();
