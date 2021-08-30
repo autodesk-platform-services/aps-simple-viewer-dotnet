@@ -3,6 +3,7 @@ using Autodesk.Forge.Client;
 using Autodesk.Forge.Model;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace forge_simple_viewer_dotnet
@@ -17,6 +18,8 @@ namespace forge_simple_viewer_dotnet
     {
         Task<IEnumerable<dynamic>> GetObjects();
         Task<Token> GetAccessToken();
+        Task<dynamic> UploadModel(string objectName, Stream content, long contentLength);
+        Task<dynamic> TranslateModel(string objectId, string rootFilename);
     }
 
     public class ForgeService : IForgeService
@@ -47,6 +50,38 @@ namespace forge_simple_viewer_dotnet
                 objects.Add(new { name = obj.Value.objectKey, urn = Base64Encode(obj.Value.objectId) });
             }
             return objects;
+        }
+
+        public async Task<dynamic> UploadModel(string objectName, Stream content, long contentLength)
+        {
+            await EnsureBucketExists(_bucket);
+            var token = await GetInternalToken();
+            var api = new ObjectsApi();
+            api.Configuration.AccessToken = token.AccessToken;
+            dynamic obj = await api.UploadObjectAsync(_bucket, objectName, (int)contentLength, content);
+            return obj;
+        }
+
+        public async Task<dynamic> TranslateModel(string objectId, string rootFilename)
+        {
+            var token = await GetInternalToken();
+            var api = new DerivativesApi();
+            api.Configuration.AccessToken = token.AccessToken;
+            var formats = new List<JobPayloadItem>
+            {
+                new JobPayloadItem(JobPayloadItem.TypeEnum.Svf, new List<JobPayloadItem.ViewsEnum> { JobPayloadItem.ViewsEnum._2d, JobPayloadItem.ViewsEnum._2d })
+            };
+            var payload = new JobPayload(
+                new JobPayloadInput(Base64Encode(objectId)),
+                new JobPayloadOutput(formats)
+            );
+            if (!string.IsNullOrEmpty(rootFilename))
+            {
+                payload.Input.RootFilename = rootFilename;
+                payload.Input.CompressedUrn = true;
+            }
+            dynamic job = await api.TranslateAsync(payload);
+            return job;
         }
 
         public async Task<Token> GetAccessToken()

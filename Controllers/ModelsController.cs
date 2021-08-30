@@ -1,4 +1,6 @@
+using System.IO;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -23,6 +25,32 @@ namespace forge_simple_viewer_dotnet
         {
             var objects = await _forgeService.GetObjects();
             return JsonConvert.SerializeObject(objects);
+        }
+
+        public class UploadModelForm
+        {
+             [FromForm(Name = "model-zip-entrypoint")]
+            public string Entrypoint { get; set; }
+            [FromForm(Name = "model-file")]
+            public IFormFile File { get; set; }
+        }
+
+        [HttpPost()]
+        public async Task<dynamic> UploadAndTranslateModel([FromForm]UploadModelForm form)
+        {
+            // For some reason we cannot use the incoming stream directly...
+            // so let's save the model into a local temp file first
+            var tmpPath = Path.GetTempFileName();
+            using (var stream = new FileStream(tmpPath, FileMode.OpenOrCreate))
+            {
+                await form.File.CopyToAsync(stream);
+            }
+            using (var stream = System.IO.File.OpenRead(tmpPath))
+            {
+                dynamic obj = await _forgeService.UploadModel(form.File.FileName, stream, form.File.Length);
+                dynamic job = await _forgeService.TranslateModel(obj.objectId, form.Entrypoint);
+                return job;
+            }
         }
     }
 }
