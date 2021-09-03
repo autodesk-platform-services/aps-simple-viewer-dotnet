@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
 using Autodesk.Forge;
 using Autodesk.Forge.Client;
 using Autodesk.Forge.Model;
@@ -14,15 +10,7 @@ namespace forge_simple_viewer_dotnet
         public DateTime ExpiresAt { get; set; }
     }
 
-    public interface IForgeService
-    {
-        Task<IEnumerable<dynamic>> GetObjects();
-        Task<Token> GetAccessToken();
-        Task<dynamic> UploadModel(string objectName, Stream content, long contentLength);
-        Task<dynamic> TranslateModel(string objectId, string rootFilename);
-    }
-
-    public class ForgeService : IForgeService
+    public class ForgeService
     {
         private readonly string _clientId;
         private readonly string _clientSecret;
@@ -93,11 +81,6 @@ namespace forge_simple_viewer_dotnet
             return job;
         }
 
-        public async Task<Token> GetAccessToken()
-        {
-            return await GetPublicToken();
-        }
-
         private async Task EnsureBucketExists(string bucketKey)
         {
             var token = await GetInternalToken();
@@ -120,21 +103,17 @@ namespace forge_simple_viewer_dotnet
             }
         }
 
-        private async Task<Token> GetPublicToken()
+        public async Task<Token> GetPublicToken()
         {
             if (_publicTokenCache == null || _publicTokenCache.ExpiresAt < DateTime.UtcNow)
-            {
                 _publicTokenCache = await GetToken(new Scope[] { Scope.ViewablesRead });
-            }
             return _publicTokenCache;
         }
 
         private async Task<Token> GetInternalToken()
         {
             if (_internalTokenCache == null || _internalTokenCache.ExpiresAt < DateTime.UtcNow)
-            {
                 _internalTokenCache = await GetToken(new Scope[] { Scope.BucketCreate, Scope.BucketRead, Scope.DataRead, Scope.DataWrite, Scope.DataCreate });
-            }
             return _internalTokenCache;
         }
 

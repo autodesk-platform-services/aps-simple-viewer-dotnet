@@ -1,8 +1,4 @@
-using System.IO;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace forge_simple_viewer_dotnet
@@ -11,12 +7,10 @@ namespace forge_simple_viewer_dotnet
     [Route("api/[controller]")]
     public class ModelsController : ControllerBase
     {
-        private readonly ILogger<ModelsController> _logger;
-        private readonly IForgeService _forgeService;
+        private readonly ForgeService _forgeService;
 
-        public ModelsController(ILogger<ModelsController> logger, IForgeService forgeService)
+        public ModelsController(ForgeService forgeService)
         {
-            _logger = logger;
             _forgeService = forgeService;
         }
 

@@ -1,10 +1,3 @@
-using System;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-
 namespace forge_simple_viewer_dotnet
 {
     public class Startup
@@ -27,7 +20,7 @@ namespace forge_simple_viewer_dotnet
             {
                 throw new ApplicationException("Missing required environment variables FORGE_CLIENT_ID or FORGE_CLIENT_SECRET.");
             }
-            services.AddSingleton<IForgeService>(new ForgeService(ForgeClientID, ForgeClientSecret, ForgeBucket));
+            services.AddSingleton<ForgeService>(new ForgeService(ForgeClientID, ForgeClientSecret, ForgeBucket));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
