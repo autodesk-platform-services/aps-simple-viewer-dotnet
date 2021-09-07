@@ -1,27 +1,24 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace forge_simple_viewer_dotnet
+[ApiController]
+[Route("api/[controller]")]
+public class AuthController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    private readonly ForgeService _forgeService;
+
+    public AuthController(ForgeService forgeService)
     {
-        private readonly ForgeService _forgeService;
+        _forgeService = forgeService;
+    }
 
-        public AuthController(ForgeService forgeService)
+    [HttpGet("token")]
+    public async Task<dynamic> GetAccessToken()
+    {
+        var token = await _forgeService.GetPublicToken();
+        return new
         {
-            _forgeService = forgeService;
-        }
-
-        [HttpGet("token")]
-        public async Task<dynamic> GetAccessToken()
-        {
-            var token = await _forgeService.GetPublicToken();
-            return new
-            {
-                access_token = token.AccessToken,
-                expires_in = Math.Round((token.ExpiresAt - DateTime.UtcNow).TotalSeconds)
-            };
-        }
+            access_token = token.AccessToken,
+            expires_in = Math.Round((token.ExpiresAt - DateTime.UtcNow).TotalSeconds)
+        };
     }
 }

@@ -1,51 +1,48 @@
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 
-namespace forge_simple_viewer_dotnet
+[ApiController]
+[Route("api/[controller]")]
+public class ModelsController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class ModelsController : ControllerBase
+    private readonly ForgeService _forgeService;
+
+    public ModelsController(ForgeService forgeService)
     {
-        private readonly ForgeService _forgeService;
+        _forgeService = forgeService;
+    }
 
-        public ModelsController(ForgeService forgeService)
+    [HttpGet()]
+    public async Task<ActionResult<string>> GetModels()
+    {
+        var objects = await _forgeService.GetObjects();
+        return JsonConvert.SerializeObject(objects);
+    }
+
+    public class UploadModelForm
+    {
+        [FromForm(Name = "model-zip-entrypoint")]
+        public string Entrypoint { get; set; }
+
+        [FromForm(Name = "model-file")]
+        public IFormFile File { get; set; }
+    }
+
+    [HttpPost()]
+    public async Task UploadAndTranslateModel([FromForm] UploadModelForm form)
+    {
+        // For some reason we cannot use the incoming stream directly...
+        // so let's save the model into a local temp file first
+        var tmpPath = Path.GetTempFileName();
+        using (var stream = new FileStream(tmpPath, FileMode.OpenOrCreate))
         {
-            _forgeService = forgeService;
+            await form.File.CopyToAsync(stream);
         }
-
-        [HttpGet()]
-        public async Task<ActionResult<string>> GetModels()
+        using (var stream = System.IO.File.OpenRead(tmpPath))
         {
-            var objects = await _forgeService.GetObjects();
-            return JsonConvert.SerializeObject(objects);
+            dynamic obj = await _forgeService.UploadModel(form.File.FileName, stream, form.File.Length);
+            await _forgeService.TranslateModel(obj.objectId, form.Entrypoint);
         }
-
-        public class UploadModelForm
-        {
-            [FromForm(Name = "model-zip-entrypoint")]
-            public string Entrypoint { get; set; }
-
-            [FromForm(Name = "model-file")]
-            public IFormFile File { get; set; }
-        }
-
-        [HttpPost()]
-        public async Task UploadAndTranslateModel([FromForm] UploadModelForm form)
-        {
-            // For some reason we cannot use the incoming stream directly...
-            // so let's save the model into a local temp file first
-            var tmpPath = Path.GetTempFileName();
-            using (var stream = new FileStream(tmpPath, FileMode.OpenOrCreate))
-            {
-                await form.File.CopyToAsync(stream);
-            }
-            using (var stream = System.IO.File.OpenRead(tmpPath))
-            {
-                dynamic obj = await _forgeService.UploadModel(form.File.FileName, stream, form.File.Length);
-                await _forgeService.TranslateModel(obj.objectId, form.Entrypoint);
-            }
-            System.IO.File.Delete(tmpPath);
-        }
+        System.IO.File.Delete(tmpPath);
     }
 }
