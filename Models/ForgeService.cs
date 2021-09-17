@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 using Autodesk.Forge;
 using Autodesk.Forge.Client;
 using Autodesk.Forge.Model;
