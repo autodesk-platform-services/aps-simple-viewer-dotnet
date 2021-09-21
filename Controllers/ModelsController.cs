@@ -1,13 +1,16 @@
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
 
 [ApiController]
 [Route("api/[controller]")]
 public class ModelsController : ControllerBase
 {
+    public record BucketObject(string name, string urn);
+
     private readonly ForgeService _forgeService;
 
     public ModelsController(ForgeService forgeService)
@@ -16,10 +19,11 @@ public class ModelsController : ControllerBase
     }
 
     [HttpGet()]
-    public async Task<ActionResult<string>> GetModels()
+    public async Task<IEnumerable<BucketObject>> GetModels()
     {
         var objects = await _forgeService.GetObjects();
-        return JsonConvert.SerializeObject(objects);
+        return from o in objects
+               select new BucketObject(o.ObjectKey, ForgeService.Base64Encode(o.ObjectId));
     }
 
     public class UploadModelForm

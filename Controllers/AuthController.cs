@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
+    public record AccessToken(string access_token, long expires_in);
+
     private readonly ForgeService _forgeService;
 
     public AuthController(ForgeService forgeService)
@@ -14,13 +16,12 @@ public class AuthController : ControllerBase
     }
 
     [HttpGet("token")]
-    public async Task<dynamic> GetAccessToken()
+    public async Task<AccessToken> GetAccessToken()
     {
         var token = await _forgeService.GetPublicToken();
-        return new
-        {
-            access_token = token.AccessToken,
-            expires_in = Math.Round((token.ExpiresAt - DateTime.UtcNow).TotalSeconds)
-        };
+        return new AccessToken(
+            token.AccessToken,
+            (long)Math.Round((token.ExpiresAt - DateTime.UtcNow).TotalSeconds)
+        );
     }
 }

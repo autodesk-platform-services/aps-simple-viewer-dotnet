@@ -27,29 +27,25 @@ public class ForgeService
         _bucket = string.IsNullOrEmpty(bucket) ? string.Format("{0}-basic-app", _clientId.ToLower()) : bucket;
     }
 
-    public async Task<IEnumerable<dynamic>> GetObjects()
+    public async Task<IEnumerable<ObjectDetails>> GetObjects()
     {
         const int PageSize = 64;
         await EnsureBucketExists(_bucket);
         var token = await GetInternalToken();
         var api = new ObjectsApi();
         api.Configuration.AccessToken = token.AccessToken;
-        var objects = new List<dynamic>();
-        dynamic response = await api.GetObjectsAsync(_bucket, PageSize);
-        foreach (KeyValuePair<string, dynamic> obj in new DynamicDictionaryItems(response.items))
+        var results = new List<ObjectDetails>();
+        DynamicJsonResponse _response = await api.GetObjectsAsync(_bucket, PageSize);
+        var response = _response.ToObject<BucketObjects>();
+        results.AddRange(response.Items);
+        while (!string.IsNullOrEmpty(response.Next))
         {
-            objects.Add(new { name = obj.Value.objectKey, urn = Base64Encode(obj.Value.objectId) });
+            var queryParams = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(new Uri(response.Next).Query);
+            _response = await api.GetObjectsAsync(_bucket, PageSize, null, queryParams["startAt"]);
+            response = _response.ToObject<BucketObjects>();
+            results.AddRange(response.Items);
         }
-        while ((response as DynamicDictionary).Dictionary.ContainsKey("next")) // This feels hacky... is there a better way?
-        {
-            var queryParams = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(new Uri(response.next).Query);
-            response = await api.GetObjectsAsync(_bucket, PageSize, null, queryParams["startAt"]);
-            foreach (KeyValuePair<string, dynamic> obj in new DynamicDictionaryItems(response.items))
-            {
-                objects.Add(new { name = obj.Value.objectKey, urn = Base64Encode(obj.Value.objectId) });
-            }
-        }
-        return objects;
+        return results;
     }
 
     public async Task<dynamic> UploadModel(string objectName, Stream content, long contentLength)
@@ -68,8 +64,8 @@ public class ForgeService
         var api = new DerivativesApi();
         api.Configuration.AccessToken = token.AccessToken;
         var formats = new List<JobPayloadItem> {
-                new JobPayloadItem (JobPayloadItem.TypeEnum.Svf, new List<JobPayloadItem.ViewsEnum> { JobPayloadItem.ViewsEnum._2d, JobPayloadItem.ViewsEnum._2d })
-            };
+            new JobPayloadItem (JobPayloadItem.TypeEnum.Svf, new List<JobPayloadItem.ViewsEnum> { JobPayloadItem.ViewsEnum._2d, JobPayloadItem.ViewsEnum._2d })
+        };
         var payload = new JobPayload(
             new JobPayloadInput(Base64Encode(objectId)),
             new JobPayloadOutput(formats)
@@ -129,7 +125,7 @@ public class ForgeService
         };
     }
 
-    private static string Base64Encode(string plainText)
+    public static string Base64Encode(string plainText)
     {
         var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
         return System.Convert.ToBase64String(plainTextBytes).TrimEnd('=');
