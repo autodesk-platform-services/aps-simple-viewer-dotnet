@@ -34,18 +34,12 @@ public class ModelsController : ControllerBase
     [HttpPost()]
     public async Task UploadAndTranslateModel([FromForm] UploadModelForm form)
     {
-        // For some reason we cannot use the incoming stream directly...
-        // so let's save the model into a local temp file first
-        var tmpPath = Path.GetTempFileName();
-        using (var stream = new FileStream(tmpPath, FileMode.OpenOrCreate))
+        using (var stream = new MemoryStream())
         {
             await form.File.CopyToAsync(stream);
-        }
-        using (var stream = System.IO.File.OpenRead(tmpPath))
-        {
+            stream.Position = 0;
             dynamic obj = await _forgeService.UploadModel(form.File.FileName, stream, form.File.Length);
             await _forgeService.TranslateModel(obj.objectId, form.Entrypoint);
         }
-        System.IO.File.Delete(tmpPath);
     }
 }
