@@ -48,6 +48,16 @@ public class ForgeService
         return results;
     }
 
+    public async Task<Manifest> GetManifest(string urn)
+    {
+        var token = await GetInternalToken();
+        var api = new DerivativesApi();
+        api.Configuration.AccessToken = token.AccessToken;
+        DynamicJsonResponse _response = await api.GetManifestAsync(urn);
+        var manifest = _response.ToObject<Manifest>();
+        return manifest;
+    }
+
     public async Task<dynamic> UploadModel(string objectName, Stream content, long contentLength)
     {
         await EnsureBucketExists(_bucket);
