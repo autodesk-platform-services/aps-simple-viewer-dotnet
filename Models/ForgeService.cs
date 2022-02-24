@@ -58,17 +58,18 @@ public class ForgeService
         return manifest;
     }
 
-    public async Task<dynamic> UploadModel(string objectName, Stream content, long contentLength)
+    public async Task<ObjectDetails> UploadModel(string objectName, Stream content, long contentLength)
     {
         await EnsureBucketExists(_bucket);
         var token = await GetInternalToken();
         var api = new ObjectsApi();
         api.Configuration.AccessToken = token.AccessToken;
-        dynamic obj = await api.UploadObjectAsync(_bucket, objectName, (int)contentLength, content);
+        dynamic _response = await api.UploadObjectAsync(_bucket, objectName, (int)contentLength, content);
+        var obj = _response.ToObject<ObjectDetails>();
         return obj;
     }
 
-    public async Task<dynamic> TranslateModel(string objectId, string rootFilename)
+    public async Task<Job> TranslateModel(string objectId, string rootFilename)
     {
         var token = await GetInternalToken();
         var api = new DerivativesApi();
@@ -85,7 +86,8 @@ public class ForgeService
             payload.Input.RootFilename = rootFilename;
             payload.Input.CompressedUrn = true;
         }
-        dynamic job = await api.TranslateAsync(payload);
+        dynamic _response = await api.TranslateAsync(payload);
+        var job = _response.ToObject<Job>();
         return job;
     }
 

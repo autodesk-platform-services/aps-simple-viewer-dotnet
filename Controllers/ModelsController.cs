@@ -67,14 +67,15 @@ public class ModelsController : ControllerBase
     }
 
     [HttpPost()]
-    public async Task UploadAndTranslateModel([FromForm] UploadModelForm form)
+    public async Task<BucketObject> UploadAndTranslateModel([FromForm] UploadModelForm form)
     {
         using (var stream = new MemoryStream())
         {
             await form.File.CopyToAsync(stream);
             stream.Position = 0;
-            dynamic obj = await _forgeService.UploadModel(form.File.FileName, stream, form.File.Length);
-            await _forgeService.TranslateModel(obj.objectId, form.Entrypoint);
+            var obj = await _forgeService.UploadModel(form.File.FileName, stream, form.File.Length);
+            var job = await _forgeService.TranslateModel(obj.ObjectId, form.Entrypoint);
+            return new BucketObject(obj.ObjectKey, job.Urn);
         }
     }
 }
