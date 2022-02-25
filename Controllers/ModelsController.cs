@@ -11,8 +11,6 @@ public class ModelsController : ControllerBase
 {
     public record BucketObject(string name, string urn);
 
-    public record TranslationStatus(string status, string progress, IEnumerable<string>? messages);
-
     private readonly ForgeService _forgeService;
 
     public ModelsController(ForgeService forgeService)
@@ -31,27 +29,15 @@ public class ModelsController : ControllerBase
     [HttpGet("{urn}/status")]
     public async Task<TranslationStatus> GetModelStatus(string urn)
     {
-        var messages = new List<string>();
         try
         {
-            var manifest = await _forgeService.GetManifest(urn);
-            foreach (var derivative in manifest.Derivatives)
-            {
-                foreach (var child in derivative.Children)
-                {
-                    if (child.Messages != null)
-                    {
-                        foreach (var message in child.Messages)
-                            messages.AddRange(message._Message);
-                    }
-                }
-            }
-            return new TranslationStatus(manifest.Status, manifest.Progress, messages);
+            var status = await _forgeService.GetTranslationStatus(urn);
+            return status;
         }
         catch (Autodesk.Forge.Client.ApiException ex)
         {
             if (ex.ErrorCode == 404)
-                return new TranslationStatus("n/a", "", messages);
+                return new TranslationStatus("n/a", "", new List<string>());
             else
                 throw ex;
         }

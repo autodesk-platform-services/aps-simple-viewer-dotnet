@@ -12,6 +12,8 @@ public class Token
     public DateTime ExpiresAt { get; set; }
 }
 
+public record TranslationStatus(string status, string progress, IEnumerable<string>? messages);
+
 public class ForgeService
 {
     private readonly string _clientId;
@@ -48,14 +50,25 @@ public class ForgeService
         return results;
     }
 
-    public async Task<Manifest> GetManifest(string urn)
+    public async Task<TranslationStatus> GetTranslationStatus(string urn)
     {
         var token = await GetInternalToken();
         var api = new DerivativesApi();
         api.Configuration.AccessToken = token.AccessToken;
         DynamicJsonResponse _response = await api.GetManifestAsync(urn);
-        var manifest = _response.ToObject<Manifest>();
-        return manifest;
+        var json = _response.ToJson();
+        var messages = new List<string>();
+        foreach (var message in json.SelectTokens("$.derivatives[*].messages[?(@.type == 'error')].message"))
+        {
+            if (message.Type == Newtonsoft.Json.Linq.JTokenType.String)
+                messages.Add((string)message);
+        }
+        foreach (var message in json.SelectTokens("$.derivatives[*].children[*].messages[?(@.type == 'error')].message"))
+        {
+            if (message.Type == Newtonsoft.Json.Linq.JTokenType.String)
+                messages.Add((string)message);
+        }
+        return new TranslationStatus((string)json["status"], (string)json["progress"], messages);
     }
 
     public async Task<ObjectDetails> UploadModel(string objectName, Stream content, long contentLength)
