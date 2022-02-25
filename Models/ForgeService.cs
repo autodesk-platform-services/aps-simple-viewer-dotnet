@@ -6,13 +6,9 @@ using Autodesk.Forge;
 using Autodesk.Forge.Client;
 using Autodesk.Forge.Model;
 
-public class Token
-{
-    public string AccessToken { get; set; }
-    public DateTime ExpiresAt { get; set; }
-}
+public record Token(string AccessToken, DateTime ExpiresAt);
 
-public record TranslationStatus(string status, string progress, IEnumerable<string>? messages);
+public record TranslationStatus(string Status, string Progress, IEnumerable<string>? Messages);
 
 public class ForgeService
 {
@@ -37,14 +33,12 @@ public class ForgeService
         var api = new ObjectsApi();
         api.Configuration.AccessToken = token.AccessToken;
         var results = new List<ObjectDetails>();
-        DynamicJsonResponse _response = await api.GetObjectsAsync(_bucket, PageSize);
-        var response = _response.ToObject<BucketObjects>();
+        var response = (await api.GetObjectsAsync(_bucket, PageSize)).ToObject<BucketObjects>();
         results.AddRange(response.Items);
         while (!string.IsNullOrEmpty(response.Next))
         {
             var queryParams = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(new Uri(response.Next).Query);
-            _response = await api.GetObjectsAsync(_bucket, PageSize, null, queryParams["startAt"]);
-            response = _response.ToObject<BucketObjects>();
+            response = (await api.GetObjectsAsync(_bucket, PageSize, null, queryParams["startAt"])).ToObject<BucketObjects>();
             results.AddRange(response.Items);
         }
         return results;
@@ -55,8 +49,7 @@ public class ForgeService
         var token = await GetInternalToken();
         var api = new DerivativesApi();
         api.Configuration.AccessToken = token.AccessToken;
-        DynamicJsonResponse _response = await api.GetManifestAsync(urn);
-        var json = _response.ToJson();
+        var json = (await api.GetManifestAsync(urn)).ToJson();
         var messages = new List<string>();
         foreach (var message in json.SelectTokens("$.derivatives[*].messages[?(@.type == 'error')].message"))
         {
@@ -77,8 +70,7 @@ public class ForgeService
         var token = await GetInternalToken();
         var api = new ObjectsApi();
         api.Configuration.AccessToken = token.AccessToken;
-        dynamic _response = await api.UploadObjectAsync(_bucket, objectName, (int)contentLength, content);
-        var obj = _response.ToObject<ObjectDetails>();
+        var obj = (await api.UploadObjectAsync(_bucket, objectName, (int)contentLength, content)).ToObject<ObjectDetails>();
         return obj;
     }
 
@@ -99,8 +91,7 @@ public class ForgeService
             payload.Input.RootFilename = rootFilename;
             payload.Input.CompressedUrn = true;
         }
-        dynamic _response = await api.TranslateAsync(payload);
-        var job = _response.ToObject<Job>();
+        var job = (await api.TranslateAsync(payload)).ToObject<Job>();
         return job;
     }
 
@@ -143,11 +134,7 @@ public class ForgeService
     private async Task<Token> GetToken(Scope[] scopes)
     {
         dynamic auth = await new TwoLeggedApi().AuthenticateAsync(_clientId, _clientSecret, "client_credentials", scopes);
-        return new Token
-        {
-            AccessToken = auth.access_token,
-            ExpiresAt = DateTime.UtcNow.AddSeconds(auth.expires_in)
-        };
+        return new Token(auth.access_token, DateTime.UtcNow.AddSeconds(auth.expires_in));
     }
 
     public static string Base64Encode(string plainText)
