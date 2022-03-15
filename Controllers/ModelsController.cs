@@ -46,10 +46,10 @@ public class ModelsController : ControllerBase
     public class UploadModelForm
     {
         [FromForm(Name = "model-zip-entrypoint")]
-        public string Entrypoint { get; set; }
+        public string? Entrypoint { get; set; }
 
         [FromForm(Name = "model-file")]
-        public IFormFile? File { get; set; }
+        public IFormFile File { get; set; }
     }
 
     [HttpPost()]
