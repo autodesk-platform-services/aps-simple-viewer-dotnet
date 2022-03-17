@@ -18,9 +18,9 @@ public class Startup
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddControllers();
-        var ForgeClientID = Environment.GetEnvironmentVariable("FORGE_CLIENT_ID");
-        var ForgeClientSecret = Environment.GetEnvironmentVariable("FORGE_CLIENT_SECRET");
-        var ForgeBucket = Environment.GetEnvironmentVariable("FORGE_BUCKET"); // Optional
+        var ForgeClientID = Configuration["FORGE_CLIENT_ID"];
+        var ForgeClientSecret = Configuration["FORGE_CLIENT_SECRET"];
+        var ForgeBucket = Configuration["FORGE_BUCKET"]; // Optional
         if (string.IsNullOrEmpty(ForgeClientID) || string.IsNullOrEmpty(ForgeClientSecret))
         {
             throw new ApplicationException("Missing required environment variables FORGE_CLIENT_ID or FORGE_CLIENT_SECRET.");
