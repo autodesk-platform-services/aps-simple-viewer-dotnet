@@ -35,7 +35,6 @@ public class Startup
         {
             app.UseDeveloperExceptionPage();
         }
-        app.UseHttpsRedirection();
         app.UseDefaultFiles();
         app.UseStaticFiles();
         app.UseRouting();
