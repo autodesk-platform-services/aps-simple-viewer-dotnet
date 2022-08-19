@@ -59,7 +59,7 @@ public class ModelsController : ControllerBase
         {
             await form.File.CopyToAsync(stream);
             stream.Position = 0;
-            var obj = await _forgeService.UploadModel(form.File.FileName, stream, form.File.Length);
+            var obj = await _forgeService.UploadModel(form.File.FileName, stream);
             var job = await _forgeService.TranslateModel(obj.ObjectId, form.Entrypoint);
             return new BucketObject(obj.ObjectKey, job.Urn);
         }

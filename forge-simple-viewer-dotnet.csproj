@@ -3,6 +3,6 @@
     <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Autodesk.Forge" Version="1.9.0" />
+    <PackageReference Include="Autodesk.Forge" Version="1.9.1" />
   </ItemGroup>
 </Project>

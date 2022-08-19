@@ -30,14 +30,21 @@ public partial class ForgeService
         }
     }
 
-    public async Task<ObjectDetails> UploadModel(string objectName, Stream content, long contentLength)
+    public async Task<ObjectDetails> UploadModel(string objectName, Stream content)
     {
         await EnsureBucketExists(_bucket);
         var token = await GetInternalToken();
         var api = new ObjectsApi();
         api.Configuration.AccessToken = token.AccessToken;
-        var obj = (await api.UploadObjectAsync(_bucket, objectName, (int)contentLength, content)).ToObject<ObjectDetails>();
-        return obj;
+        var results = await api.uploadResources(_bucket, new List<UploadItemDesc> {
+            new UploadItemDesc(objectName, content)
+        });
+        if (results[0].Error) {
+            throw new Exception(results[0].completed.ToString());
+        } else {
+            var json = results[0].completed.ToJson();
+            return json.ToObject<ObjectDetails>();
+        }
     }
 
     public async Task<IEnumerable<ObjectDetails>> GetObjects()
