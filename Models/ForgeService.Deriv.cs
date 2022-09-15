@@ -19,7 +19,7 @@ public partial class ForgeService
         var api = new DerivativesApi();
         api.Configuration.AccessToken = token.AccessToken;
         var formats = new List<JobPayloadItem> {
-            new JobPayloadItem (JobPayloadItem.TypeEnum.Svf, new List<JobPayloadItem.ViewsEnum> { JobPayloadItem.ViewsEnum._2d, JobPayloadItem.ViewsEnum._2d })
+            new JobPayloadItem (JobPayloadItem.TypeEnum.Svf, new List<JobPayloadItem.ViewsEnum> { JobPayloadItem.ViewsEnum._2d, JobPayloadItem.ViewsEnum._3d })
         };
         var payload = new JobPayload(
             new JobPayloadInput(Base64Encode(objectId)),
