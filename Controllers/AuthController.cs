@@ -8,17 +8,17 @@ public class AuthController : ControllerBase
 {
     public record AccessToken(string access_token, long expires_in);
 
-    private readonly ForgeService _forgeService;
+    private readonly APS _aps;
 
-    public AuthController(ForgeService forgeService)
+    public AuthController(APS aps)
     {
-        _forgeService = forgeService;
+        _aps = aps;
     }
 
     [HttpGet("token")]
     public async Task<AccessToken> GetAccessToken()
     {
-        var token = await _forgeService.GetPublicToken();
+        var token = await _aps.GetPublicToken();
         return new AccessToken(
             token.AccessToken,
             (long)Math.Round((token.ExpiresAt - DateTime.UtcNow).TotalSeconds)

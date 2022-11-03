@@ -9,7 +9,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/bin/Debug/net6.0/forge-simple-viewer-dotnet.dll",
+            "program": "${workspaceFolder}/bin/Debug/net6.0/aps-simple-viewer-dotnet.dll",
             "args": [],
             "cwd": "${workspaceFolder}",
             "stopAtEntry": false,

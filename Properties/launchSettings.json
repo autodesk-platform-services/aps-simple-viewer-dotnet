@@ -16,7 +16,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "forge_simple_viewer_dotnet": {
+    "aps_simple_viewer_dotnet": {
       "commandName": "Project",
       "dotnetRunMessages": "true",
       "launchBrowser": true,

@@ -4,7 +4,7 @@ using Autodesk.Forge;
 
 public record Token(string AccessToken, DateTime ExpiresAt);
 
-public partial class ForgeService
+public partial class APS
 {
     private Token _internalTokenCache;
     private Token _publicTokenCache;

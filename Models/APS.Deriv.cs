@@ -5,7 +5,7 @@ using Autodesk.Forge.Model;
 
 public record TranslationStatus(string Status, string Progress, IEnumerable<string>? Messages);
 
-public partial class ForgeService
+public partial class APS
 {
     public static string Base64Encode(string plainText)
     {

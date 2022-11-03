@@ -6,7 +6,7 @@ using Autodesk.Forge;
 using Autodesk.Forge.Client;
 using Autodesk.Forge.Model;
 
-public partial class ForgeService
+public partial class APS
 {
     private async Task EnsureBucketExists(string bucketKey)
     {

@@ -18,14 +18,14 @@ public class Startup
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddControllers();
-        var ForgeClientID = Configuration["FORGE_CLIENT_ID"];
-        var ForgeClientSecret = Configuration["FORGE_CLIENT_SECRET"];
-        var ForgeBucket = Configuration["FORGE_BUCKET"]; // Optional
-        if (string.IsNullOrEmpty(ForgeClientID) || string.IsNullOrEmpty(ForgeClientSecret))
+        var clientID = Configuration["APS_CLIENT_ID"];
+        var clientSecret = Configuration["APS_CLIENT_SECRET"];
+        var bucket = Configuration["APS_BUCKET"]; // Optional
+        if (string.IsNullOrEmpty(clientID) || string.IsNullOrEmpty(clientSecret))
         {
-            throw new ApplicationException("Missing required environment variables FORGE_CLIENT_ID or FORGE_CLIENT_SECRET.");
+            throw new ApplicationException("Missing required environment variables APS_CLIENT_ID or APS_CLIENT_SECRET.");
         }
-        services.AddSingleton<ForgeService>(new ForgeService(ForgeClientID, ForgeClientSecret, ForgeBucket));
+        services.AddSingleton<APS>(new APS(clientID, clientSecret, bucket));
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

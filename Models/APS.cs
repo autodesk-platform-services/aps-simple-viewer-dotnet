@@ -1,10 +1,10 @@
-public partial class ForgeService
+public partial class APS
 {
     private readonly string _clientId;
     private readonly string _clientSecret;
     private readonly string _bucket;
 
-    public ForgeService(string clientId, string clientSecret, string bucket = null)
+    public APS(string clientId, string clientSecret, string bucket = null)
     {
         _clientId = clientId;
         _clientSecret = clientSecret;
