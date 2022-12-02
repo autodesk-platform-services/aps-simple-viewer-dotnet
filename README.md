@@ -1,4 +1,4 @@
-# aps-simple-viewer-dotnet
+# Simple Viewer (.NET)
 
 ![platforms](https://img.shields.io/badge/platform-windows%20%7C%20osx%20%7C%20linux-lightgray.svg)
 [![.net](https://img.shields.io/badge/net-6.0-blue.svg)](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
@@ -8,7 +8,7 @@
 the [Simple Viewer](https://tutorials.autodesk.io/tutorials/simple-viewer/) tutorial
 from https://tutorials.autodesk.io.
 
-![screenshot](screenshot.png)
+![screenshot](thumbnail.png)
 
 ## Development
 
