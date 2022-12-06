@@ -8,7 +8,7 @@
 the [Simple Viewer](https://tutorials.autodesk.io/tutorials/simple-viewer/) tutorial
 from https://tutorials.autodesk.io.
 
-![screenshot](thumbnail.png)
+![thumbnail](thumbnail.png)
 
 ## Development
 
