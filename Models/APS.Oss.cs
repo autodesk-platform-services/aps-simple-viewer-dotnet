@@ -1,66 +1,52 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
-using Autodesk.Forge;
-using Autodesk.Forge.Client;
-using Autodesk.Forge.Model;
+using Autodesk.Oss;
+using Autodesk.Oss.Model;
+using System.Threading;
 
 public partial class APS
 {
     private async Task EnsureBucketExists(string bucketKey)
     {
         var token = await GetInternalToken();
-        var api = new BucketsApi();
-        api.Configuration.AccessToken = token.AccessToken;
+        OssClient ossClient = new OssClient(_SDKManager);
+        CreateBucketsPayload policyKey = new() { PolicyKey = "Persistent", BucketKey = _bucket };
         try
         {
-            await api.GetBucketDetailsAsync(bucketKey);
+            await ossClient.GetBucketDetailsAsync(bucketKey, accessToken: token.AccessToken);
         }
-        catch (ApiException e)
+        catch (OssApiException e)
         {
-            if (e.ErrorCode == 404)
-            {
-                await api.CreateBucketAsync(new PostBucketsPayload(bucketKey, null, PostBucketsPayload.PolicyKeyEnum.Temporary));
-            }
+            if (e.HttpResponseMessage.StatusCode != System.Net.HttpStatusCode.OK)
+                await ossClient.CreateBucketAsync("US", policyKey, accessToken: token.AccessToken);
             else
             {
                 throw e;
             }
         }
     }
-
-    public async Task<ObjectDetails> UploadModel(string objectName, Stream content)
+    public async Task<ObjectDetails> UploadModel(string objectName, string sourceToUpload)
     {
         await EnsureBucketExists(_bucket);
         var token = await GetInternalToken();
-        var api = new ObjectsApi();
-        api.Configuration.AccessToken = token.AccessToken;
-        var results = await api.uploadResources(_bucket, new List<UploadItemDesc> {
-            new UploadItemDesc(objectName, content)
-        });
-        if (results[0].Error) {
-            throw new Exception(results[0].completed.ToString());
-        } else {
-            var json = results[0].completed.ToJson();
-            return json.ToObject<ObjectDetails>();
-        }
+        OssClient OssApi = new OssClient(_SDKManager);
+        ObjectDetails response = await OssApi.Upload(_bucket, objectName, sourceToUpload, accessToken: token.AccessToken, CancellationToken.None);
+        return response;
     }
-
     public async Task<IEnumerable<ObjectDetails>> GetObjects()
     {
         const int PageSize = 64;
         await EnsureBucketExists(_bucket);
         var token = await GetInternalToken();
-        var api = new ObjectsApi();
-        api.Configuration.AccessToken = token.AccessToken;
+        OssClient ossClient = new OssClient(_SDKManager);
         var results = new List<ObjectDetails>();
-        var response = (await api.GetObjectsAsync(_bucket, PageSize)).ToObject<BucketObjects>();
+        var response = await ossClient.GetObjectsAsync(_bucket, PageSize, accessToken: token.AccessToken);
         results.AddRange(response.Items);
         while (!string.IsNullOrEmpty(response.Next))
         {
             var queryParams = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(new Uri(response.Next).Query);
-            response = (await api.GetObjectsAsync(_bucket, PageSize, null, queryParams["startAt"])).ToObject<BucketObjects>();
+            response = await ossClient.GetObjectsAsync(_bucket, PageSize, null, queryParams["startAt"]);
             results.AddRange(response.Items);
         }
         return results;

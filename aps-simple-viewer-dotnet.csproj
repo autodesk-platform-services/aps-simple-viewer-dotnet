@@ -5,6 +5,10 @@
   <ItemGroup>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Autodesk.Forge" Version="1.9.7" />
+
+    <PackageReference Include="Autodesk.ModelDerivative" Version="1.0.0-beta3"/>
+    <PackageReference Include="Autodesk.SDKManager" Version="1.0.0-beta1" />
+    <PackageReference Include="Autodesk.Oss" Version="1.0.0-beta3" />
+    <PackageReference Include="Autodesk.Authentication" Version="1.0.0-beta1"/>   
   </ItemGroup>
 </Project>
