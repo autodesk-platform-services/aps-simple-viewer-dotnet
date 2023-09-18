@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Autodesk.Forge;
-using Autodesk.Forge.Model;
+using Autodesk.ModelDerivative;
+using Autodesk.ModelDerivative.Model;
+using System;
 
 public record TranslationStatus(string Status, string Progress, IEnumerable<string>? Messages);
 
@@ -10,47 +11,81 @@ public partial class APS
     public static string Base64Encode(string plainText)
     {
         var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
-        return System.Convert.ToBase64String(plainTextBytes).TrimEnd('=');
+        return Convert.ToBase64String(plainTextBytes).TrimEnd('=');
     }
 
     public async Task<Job> TranslateModel(string objectId, string rootFilename)
     {
-        var token = await GetInternalToken();
-        var api = new DerivativesApi();
-        api.Configuration.AccessToken = token.AccessToken;
-        var formats = new List<JobPayloadItem> {
-            new JobPayloadItem (JobPayloadItem.TypeEnum.Svf, new List<JobPayloadItem.ViewsEnum> { JobPayloadItem.ViewsEnum._2d, JobPayloadItem.ViewsEnum._3d })
-        };
-        var payload = new JobPayload(
-            new JobPayloadInput(Base64Encode(objectId)),
-            new JobPayloadOutput(formats)
-        );
-        if (!string.IsNullOrEmpty(rootFilename))
-        {
-            payload.Input.RootFilename = rootFilename;
-            payload.Input.CompressedUrn = true;
-        }
-        var job = (await api.TranslateAsync(payload)).ToObject<Job>();
-        return job;
-    }
 
+        ModelDerivativeClient modelDerivativeClient =new ModelDerivativeClient(_SDKManager);
+        var token = await GetInternalToken();
+
+        List<JobPayloadFormat> outputFormats = new()
+        {
+            // initialising an Svf2 output class will automatically set the type to Svf2.
+             new JobSvf2OutputFormat()
+            {
+                Views =  new List<View>()
+                        {
+                        View._2d,
+                        View._3d
+                        },
+            },
+            // initialising a Thumbnail output class will automatically set the type to Thumbnail.
+            new JobThumbnailOutputFormat()
+            {
+                    Advanced = new JobThumbnailOutputFormatAdvanced(){
+                        Width = Width.NUMBER_100,
+                        Height = Height.NUMBER_100
+                    }
+            }
+        };
+        JobPayload Job = new()
+        {
+            Input = new JobPayloadInput()
+            {
+                Urn = objectId,
+                CompressedUrn = false,
+                RootFilename = rootFilename,
+            },
+            Output = new JobPayloadOutput()
+            {
+                Formats = outputFormats,
+                Destination = Region.US // This will call the respective endpoint - Either US or EMEA. Defaults to US.
+            },
+        };
+
+        Job jobResponse = null!;
+        try
+        {
+            jobResponse = await modelDerivativeClient.StartJobAsync(jobPayload: Job, accessToken: token.AccessToken);
+        }
+        catch
+        (ModelDerivativeApiException ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+        return jobResponse!;
+    }
     public async Task<TranslationStatus> GetTranslationStatus(string urn)
     {
         var token = await GetInternalToken();
-        var api = new DerivativesApi();
-        api.Configuration.AccessToken = token.AccessToken;
-        var json = (await api.GetManifestAsync(urn)).ToJson();
+        ModelDerivativeClient modelDerivativeClient = new ModelDerivativeClient(_SDKManager);
         var messages = new List<string>();
-        foreach (var message in json.SelectTokens("$.derivatives[*].messages[?(@.type == 'error')].message"))
+        string progress = null!;
+        string status = null!;
+
+        try
         {
-            if (message.Type == Newtonsoft.Json.Linq.JTokenType.String)
-                messages.Add((string)message);
+            Manifest manifestResponse = await modelDerivativeClient.GetManifestAsync(urn, accessToken: token.AccessToken);
+            progress = manifestResponse.Progress;
+            status = manifestResponse.Status;
         }
-        foreach (var message in json.SelectTokens("$.derivatives[*].children[*].messages[?(@.type == 'error')].message"))
+        catch (ModelDerivativeApiException ex)
         {
-            if (message.Type == Newtonsoft.Json.Linq.JTokenType.String)
-                messages.Add((string)message);
+            messages.Add((string)ex.Message);
         }
-        return new TranslationStatus((string)json["status"], (string)json["progress"], messages);
+        return new TranslationStatus((string)status!, progress!, messages);
     }
 }
