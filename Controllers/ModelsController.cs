@@ -54,6 +54,7 @@ public class ModelsController : ControllerBase
     }
 
     [HttpPost()]
+    [RequestSizeLimit(500_000_000)]
     public async Task<BucketObject> UploadAndTranslateModel([FromForm] UploadModelForm form)
     {
         using (var stream = new MemoryStream())
