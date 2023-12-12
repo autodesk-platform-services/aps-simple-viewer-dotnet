@@ -16,22 +16,40 @@ from https://tutorials.autodesk.io.
 
 - [APS credentials](https://forge.autodesk.com/en/docs/oauth/v2/tutorials/create-app)
 - [.NET 6](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
-- Terminal (for example, [Windows Command Prompt](https://en.wikipedia.org/wiki/Cmd.exe)
-or [macOS Terminal](https://support.apple.com/guide/terminal/welcome/mac))
+- Command-line terminal such as [PowerShell](https://learn.microsoft.com/en-us/powershell/scripting/overview)
+or [bash](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) (should already be available on your system)
+
+> We recommend using [Visual Studio Code](https://code.visualstudio.com) which, among other benefits,
+> provides an [integrated terminal](https://code.visualstudio.com/docs/terminal/basics) as well.
 
 ### Setup & Run
 
-- Clone this repository
-- Install dependencies: `dotnet restore`
-- Setup environment variables:
-  - `APS_CLIENT_ID` - your APS application client ID
-  - `APS_CLIENT_SECRET` - your APS application client secret
-  - `APS_BUCKET` (optional) - name of APS bucket to store your designs in
-- Run the server: `dotnet run`
+- Clone this repository: `git clone https://github.com/autodesk-platform-services/aps-simple-viewer-dotnet`
+- Go to the project folder: `cd aps-simple-viewer-dotnet`
+- Install .NET dependencies: `dotnet restore`
+- Open the project folder in a code editor of your choice
+- Create an _appsettings.Development.json_ file in the project folder (if it does not exist already),
+and populate it with the JSON snippet below, replacing `<client-id>` and `<client-secret>`
+with your APS Client ID and Client Secret:
 
-> When using [Visual Studio Code](https://code.visualstudio.com),
-you can specify the env. variables listed above in a _.env_ file in this
-folder, and run & debug the application directly from the editor.
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "APS_CLIENT_ID": "<client-id>",
+  "APS_CLIENT_SECRET": "<client-secret>"
+}
+```
+
+- Run the application, either from your code editor, or by running `dotnet run` in terminal
+- Open http://localhost:8080
+
+> When using [Visual Studio Code](https://code.visualstudio.com), you can run & debug
+> the application by pressing `F5`.
 
 ## Troubleshooting
 
