@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Autodesk.Forge.Client;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -30,18 +29,8 @@ public class ModelsController : ControllerBase
     [HttpGet("{urn}/status")]
     public async Task<TranslationStatus> GetModelStatus(string urn)
     {
-        try
-        {
-            var status = await _aps.GetTranslationStatus(urn);
-            return status;
-        }
-        catch (ApiException ex)
-        {
-            if (ex.ErrorCode == 404)
-                return new TranslationStatus("n/a", "", new List<string>());
-            else
-                throw ex;
-        }
+        var status = await _aps.GetTranslationStatus(urn);
+        return status;
     }
 
     public class UploadModelForm
@@ -56,13 +45,13 @@ public class ModelsController : ControllerBase
     [HttpPost(), DisableRequestSizeLimit]
     public async Task<BucketObject> UploadAndTranslateModel([FromForm] UploadModelForm form)
     {
-        using (var stream = new MemoryStream())
+        var tempFilePath = Path.GetTempFileName();
+        using (var stream = System.IO.File.Create(tempFilePath))
         {
             await form.File.CopyToAsync(stream);
-            stream.Position = 0;
-            var obj = await _aps.UploadModel(form.File.FileName, stream);
-            var job = await _aps.TranslateModel(obj.ObjectId, form.Entrypoint);
-            return new BucketObject(obj.ObjectKey, job.Urn);
         }
+        var obj = await _aps.UploadModel(form.File.FileName, tempFilePath);
+        var job = await _aps.TranslateModel(obj.ObjectId, form.Entrypoint);
+        return new BucketObject(obj.ObjectKey, job.Urn);
     }
 }

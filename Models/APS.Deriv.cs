@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Autodesk.Forge;
-using Autodesk.Forge.Model;
+using Autodesk.ModelDerivative;
+using Autodesk.ModelDerivative.Model;
 
 public record TranslationStatus(string Status, string Progress, IEnumerable<string>? Messages);
 
@@ -15,42 +15,63 @@ public partial class APS
 
     public async Task<Job> TranslateModel(string objectId, string rootFilename)
     {
-        var token = await GetInternalToken();
-        var api = new DerivativesApi();
-        api.Configuration.AccessToken = token.AccessToken;
-        var formats = new List<JobPayloadItem> {
-            new JobPayloadItem (JobPayloadItem.TypeEnum.Svf, new List<JobPayloadItem.ViewsEnum> { JobPayloadItem.ViewsEnum._2d, JobPayloadItem.ViewsEnum._3d })
+        var auth = await GetInternalToken();
+        var modelDerivativeClient = new ModelDerivativeClient(_sdkManager);
+        var payload = new JobPayload
+        {
+            Input = new JobPayloadInput
+            {
+                Urn = Base64Encode(objectId)
+            },
+            Output = new JobPayloadOutput
+            {
+                Formats = new List<JobPayloadFormat>
+                {
+                    new JobSvf2OutputFormat
+                    {
+                        Views = new List<View>
+                        {
+                            View._2d,
+                            View._3d
+                        }
+                    }
+                },
+                Destination = new JobPayloadOutputDestination()
+                {
+                    Region = Region.US
+                }
+            }
         };
-        var payload = new JobPayload(
-            new JobPayloadInput(Base64Encode(objectId)),
-            new JobPayloadOutput(formats)
-        );
         if (!string.IsNullOrEmpty(rootFilename))
         {
             payload.Input.RootFilename = rootFilename;
             payload.Input.CompressedUrn = true;
         }
-        var job = (await api.TranslateAsync(payload)).ToObject<Job>();
+        var job = await modelDerivativeClient.StartJobAsync(jobPayload: payload, accessToken: auth.AccessToken);
         return job;
     }
 
     public async Task<TranslationStatus> GetTranslationStatus(string urn)
     {
-        var token = await GetInternalToken();
-        var api = new DerivativesApi();
-        api.Configuration.AccessToken = token.AccessToken;
-        var json = (await api.GetManifestAsync(urn)).ToJson();
-        var messages = new List<string>();
-        foreach (var message in json.SelectTokens("$.derivatives[*].messages[?(@.type == 'error')].message"))
+        var auth = await GetInternalToken();
+        var modelDerivativeClient = new ModelDerivativeClient(_sdkManager);
+        try
         {
-            if (message.Type == Newtonsoft.Json.Linq.JTokenType.String)
-                messages.Add((string)message);
+            var manifest = await modelDerivativeClient.GetManifestAsync(urn, accessToken: auth.AccessToken);
+            var messages = new List<string>();
+            // TODO: collect messages from manifest
+            return new TranslationStatus(manifest.Status, manifest.Progress, messages);
         }
-        foreach (var message in json.SelectTokens("$.derivatives[*].children[*].messages[?(@.type == 'error')].message"))
+        catch (ModelDerivativeApiException ex)
         {
-            if (message.Type == Newtonsoft.Json.Linq.JTokenType.String)
-                messages.Add((string)message);
+            if (ex.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return new TranslationStatus("n/a", "", null);
+            }
+            else
+            {
+                throw;
+            }
         }
-        return new TranslationStatus((string)json["status"], (string)json["progress"], messages);
     }
 }
