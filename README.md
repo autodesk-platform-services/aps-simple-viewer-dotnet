@@ -51,6 +51,16 @@ with your APS Client ID and Client Secret:
 > When using [Visual Studio Code](https://code.visualstudio.com), you can run & debug
 > the application by pressing `F5`.
 
+## Deployment
+
+### Render
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/autodesk-platform-services/aps-simple-viewer-dotnet)
+
+Click the button above to deploy the application to [Render](https://render.com) using the
+[render.yaml](render.yaml) blueprint (the app is built using the included [Dockerfile](Dockerfile)).
+You will be prompted for your APS Client ID and Client Secret during the setup.
+
 ## Troubleshooting
 
 ### Invalid active developer path

@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: aps-simple-viewer-dotnet
+    runtime: docker
+    plan: free
+    autoDeployTrigger: off
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: APS_CLIENT_ID
+        sync: false
+      - key: APS_CLIENT_SECRET
+        sync: false
