@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -10,6 +11,13 @@ using Microsoft.AspNetCore.Mvc;
 public class ModelsController : ControllerBase
 {
     public record BucketObject(string name, string urn);
+
+    private static readonly Regex ForbiddenFilenameChars = new(@"[<>""`\\/\x00-\x1f\x7f]");
+
+    private static bool IsSafeFilename(string name)
+    {
+        return !string.IsNullOrEmpty(name) && name.Length <= 255 && !ForbiddenFilenameChars.IsMatch(name);
+    }
 
     private readonly APS _aps;
 
@@ -43,11 +51,19 @@ public class ModelsController : ControllerBase
     }
 
     [HttpPost(), DisableRequestSizeLimit]
-    public async Task<BucketObject> UploadAndTranslateModel([FromForm] UploadModelForm form)
+    public async Task<IActionResult> UploadAndTranslateModel([FromForm] UploadModelForm form)
     {
+        if (form.File == null)
+        {
+            return BadRequest("The required field (\"model-file\") is missing.");
+        }
+        if (!IsSafeFilename(form.File.FileName))
+        {
+            return BadRequest("The filename contains invalid characters.");
+        }
         using var stream = form.File.OpenReadStream();
         var obj = await _aps.UploadModel(form.File.FileName, stream);
         var job = await _aps.TranslateModel(obj.ObjectId, form.Entrypoint);
-        return new BucketObject(obj.ObjectKey, job.Urn);
+        return Ok(new BucketObject(obj.ObjectKey, job.Urn));
     }
 }
